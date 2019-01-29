@@ -1,0 +1,10 @@
+video_harvester/*
+downloaded/*
+__pycache__/*
+*.pyc
+*.swp
+*.swo
+episode_db.sqlite3
+geckodriver.log
+shows.py
+backup.main.py
