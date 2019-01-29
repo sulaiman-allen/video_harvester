@@ -3,8 +3,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from bs4 import BeautifulSoup
 from subprocess import call, check_output, Popen, PIPE
@@ -46,12 +45,10 @@ def titlecase(s):
 def get_episode_name_and_path_from_url(show, url):
 
     try:
-        #result = check_output([ "youtube-dl", "--get-title", url]).strip().decode('utf-8')
         p = Popen([ "youtube-dl", "--get-title", url], stdout=PIPE, stderr=PIPE)
         result, error = p.communicate()
         error = error.decode('utf-8')
         result = result.decode('utf-8')
-        #print(result)
         if p.returncode != 0:
             print("Something else bad happened!")
             print(error) 
@@ -60,7 +57,6 @@ def get_episode_name_and_path_from_url(show, url):
 
         filename = re.sub('[^0-9a-zA-Z\-\_\.\']+', " ", re.sub('[:]+', "-", result))
         filename = filename.strip()
-        #directory = titlecase(filename.split("-")[0].strip())
         directory = shows_dict[show].strip()
         return directory + '/' + filename
 
@@ -109,7 +105,6 @@ def write_nfo(episode, show, driver):
                 plot=nfo_content['plot']).lstrip()
 
         path = get_episode_name_and_path_from_url(show, url.replace("ondemand", "vod"))
-        #directory = path.split("/")[0].strip()
         directory = shows_dict[show]
 
         if not os.path.exists("./downloaded/" + directory):
@@ -181,7 +176,6 @@ def search_for_links(parsed_html):
     return [ { # Make sure to update this to remove the ondemand matching
         "url" : element.find('div', {"class": ['c-item__image']}).find('a')["href"],
         "title" : element.find('div', {"class": ['c-item__content']}).find('a').text
-        #"date" : element.find_all('p')[1].text
      } for element in soup.find_all('div', {"class": ["c-item", "-media"]}) ]
 
 def add_entry_to_db(show, episode):
@@ -196,7 +190,6 @@ def process_episodes(show, episodes, driver):
     cur = con.cursor()
 
     for episode in episodes:
-        #print(episode['title'])
         cur.execute("SELECT * FROM episodes WHERE show_name = ? AND episode_name = ?",\
             (show, episode['title']))
 
@@ -216,7 +209,6 @@ def get_parsed_html(show, driver, times_tried=1):
 
     print("Looking For Episodes of:", shows_dict[show])
     print(vod_base_url+show +"\n")
-    #delay = 12 # seconds
     delay = 5 # seconds
     try:
         return WebDriverWait(driver, delay)\
@@ -296,8 +288,9 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        sys.exit()
         call(["ps", "aux", "|", "grep", "firefox", "|", "grep", "-v", "grep", "|", "kill", "$(awk", "'{print $2}')"])
-    #except Exception as e:
-        #print(str(e))
-        #call(["ps", "aux", "|", "grep", "firefox", "|", "grep", "-v", "grep", "|", "kill", "$(awk", "'{print $2}')"])
+        sys.exit()
+    except Exception as e:
+        print(str(e))
+        call(["ps", "aux", "|", "grep", "firefox", "|", "grep", "-v", "grep", "|", "kill", "$(awk", "'{print $2}')"])
+        sys.exit()
