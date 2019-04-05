@@ -1,10 +1,6 @@
 from selenium import webdriver
-#from selenium.webdriver.firefox.options import Options
-
-#Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
-
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -57,14 +53,6 @@ def titlecase(s):
         s)
 def force_quit_browser_silently():
     FNULL = open(os.devnull, 'w')
-    '''
-    call([
-        "ps", "aux", "|",
-        "grep", "firefox", "|",
-        "grep", "-v", "grep", "|",
-        "kill", "$(awk", "'{print $2}'", "&>", "/dev/null"
-    ], shell=True, stdout=FNULL)
-    '''
 
     call([
         "ps", "aux", "|",
@@ -152,7 +140,6 @@ def write_nfo(episode, show, driver):
         driver.quit()
         time.sleep(5)
         force_quit_browser_silently()
-        #driver = webdriver.Firefox(options=options)
         driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
         time.sleep(3)
         write_nfo(episode, show, driver)
@@ -162,7 +149,6 @@ def write_nfo(episode, show, driver):
         driver.quit()
         time.sleep(5)
         force_quit_browser_silently()
-        #driver = webdriver.Firefox(options=options)
         driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
         time.sleep(3)
         write_nfo(episode, show, driver)
@@ -293,14 +279,12 @@ def get_parsed_html(show, driver, times_tried=1):
                 print("No Videos Found, Trying Once More...")
                 driver.quit()
                 driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
-                #driver = webdriver.Firefox(options=options)
                 return get_parsed_html(show, driver, times_tried + 1)
 
         # The element didnt load so the whole page needs to be reloaded.
         except NoSuchElementException:
             print("Loading took too much time, retrying...")
             driver.quit()
-            #driver = webdriver.Firefox(options=options)
             driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
             driver.get(vod_base_url+show)
             return get_parsed_html(show, driver)
@@ -314,7 +298,6 @@ def main():
 
     for show, directory in shows_dict.items():
         # Create webdriver
-        #driver = webdriver.Firefox(options=options)
         driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
 
         # Open web page
