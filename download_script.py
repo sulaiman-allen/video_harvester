@@ -1,9 +1,15 @@
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
+#from selenium.webdriver.firefox.options import Options
+
+#Chrome
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from urllib3.exceptions import MaxRetryError
 
 from bs4 import BeautifulSoup
 from subprocess import call, check_output, Popen, PIPE
@@ -11,22 +17,30 @@ from subprocess import CalledProcessError
 from string import Template
 
 from shows import shows_dict, vod_base_url, base_url
+from nfo_template import nfo_string
 
 import re
 import time
 import sys
 import sqlite3  
 import os
+import requests
 
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
 
 #run pip3 install requests beautifulsoup4
-#apt install ffmpeg
+#apt install ffmpeg axel
 #sudo pip install -U youtube-dl
+#sudo apt-get install chromium-chromedriver
 
-options = Options()
-options.headless = True
+
+#options = Options()
+#options.headless = True
+
+chrome_options = Options()  
+chrome_options.add_argument("--headless")  
+chrome_options.binary_location = '/usr/bin/chromium-browser'  
 
 
 def db_connect(db_path=DEFAULT_PATH):
@@ -41,6 +55,27 @@ def titlecase(s):
         lambda mo: mo.group(0)[0].upper() +
             mo.group(0)[1:].lower(),
         s)
+def force_quit_browser_silently():
+    FNULL = open(os.devnull, 'w')
+    '''
+    call([
+        "ps", "aux", "|",
+        "grep", "firefox", "|",
+        "grep", "-v", "grep", "|",
+        "kill", "$(awk", "'{print $2}'", "&>", "/dev/null"
+    ], shell=True, stdout=FNULL)
+    '''
+
+    call([
+        "ps", "aux", "|",
+        "grep", "chromium", "|",
+        "grep", "-v", "grep", "|",
+        "kill", "$(awk", "'{print $2}'", "&>", "/dev/null"
+    ], shell=True, stdout=FNULL)
+
+    #kill $(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
+
+    print("Force Quitting Browser...")
 
 def get_episode_name_and_path_from_url(show, url):
 
@@ -50,8 +85,7 @@ def get_episode_name_and_path_from_url(show, url):
         error = error.decode('utf-8')
         result = result.decode('utf-8')
         if p.returncode != 0:
-            print("Something else bad happened!")
-            print(error) 
+            print("ERROR: Unable to download JSON metadata: HTTP Error 502: Bad Gateway (caused by HTTPError()")
             time.sleep(2)
             return get_episode_name_and_path_from_url(show, url)   
 
@@ -71,12 +105,11 @@ def write_nfo(episode, show, driver):
     '''
         Returns the date the show aired.
     '''
-
     url = base_url + episode['url']
-    driver.get(url)
     delay = 10 # seconds
 
     try:
+        driver.get(url)
         parsed_html = WebDriverWait(driver, delay)\
             .until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'l-block') and contains(@class, '-lg')]"))) \
             .get_attribute('outerHTML')
@@ -90,16 +123,6 @@ def write_nfo(episode, show, driver):
                     .find("p").text
         }
 
-        nfo_string = Template(\
-        '''
-<episodedetails>
-  <title>$title</title>
-  <season>Unknown</season>
-  <aired>$date</aired>
-  <plot>$plot</plot>
-</episodedetails>
-        ''' 
-        )
         string_final = nfo_string.substitute(title=nfo_content['title'], \
                 date=nfo_content['broadcast_date'], \
                 plot=nfo_content['plot']).lstrip()
@@ -121,11 +144,28 @@ def write_nfo(episode, show, driver):
     except IndexError:
         print("There was an out of range error because page didn't load correctly, retrying..")
         return write_nfo(episode, show, driver)
-    except NoSuchElementException:
-        return print("Something went wrong here Sule!")
     except AttributeError:
         print("There was an AttributeError here. Retrying")
         return write_nfo(episode, show, driver)
+    except MaxRetryError as e:
+        print('Exception caught, type is:', e.__class__.__name__)
+        driver.quit()
+        time.sleep(5)
+        force_quit_browser_silently()
+        #driver = webdriver.Firefox(options=options)
+        driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+        time.sleep(3)
+        write_nfo(episode, show, driver)
+    except Exception as e:
+        print(e)
+        print('Exception caught, type is:', e.__class__.__name__)
+        driver.quit()
+        time.sleep(5)
+        force_quit_browser_silently()
+        #driver = webdriver.Firefox(options=options)
+        driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+        time.sleep(3)
+        write_nfo(episode, show, driver)
     
 
 def download_episode(show, episode):
@@ -195,10 +235,13 @@ def process_episodes(show, episodes, driver):
 
         if not cur.fetchone():
             print("[ ]:", episode['title'])
+
             # Add entry to database
+            #print("<<<<<<<<<<<")
             verify_downloaded = download_episode(show, episode)
             if not verify_downloaded:
                continue 
+
             air_date = write_nfo(episode, show, driver) 
             episode['date'] = air_date
             add_entry_to_db(show, episode)
@@ -207,30 +250,36 @@ def process_episodes(show, episodes, driver):
 
 def get_parsed_html(show, driver, times_tried=1):
 
-    print("Looking For Episodes of:", shows_dict[show])
-    print(vod_base_url+show +"\n")
     delay = 5 # seconds
     try:
+        WebDriverWait(driver, delay)\
+            .until(EC.presence_of_element_located((By.CLASS_NAME, 'c-itemList')))\
+
+        SCROLL_PAUSE_TIME = 1
+
+        # Get scroll height
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        distance_counter = 0
+        scroll_distance = [.40, .50, .63, .70, .74, .79]
+        while True:
+            scroll_max = driver.execute_script("return document.body.scrollHeight")
+            multiplier = scroll_distance[distance_counter]
+            result = float(scroll_max) * float(multiplier)
+            driver.execute_script("window.scrollTo(0, parseInt(" + str(result) + "));")
+
+            # Wait to load page
+            time.sleep(SCROLL_PAUSE_TIME)
+
+            # Calculate new scroll height and compare with last scroll height
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+            	break
+            last_height = new_height
+            distance_counter = distance_counter + 1 if distance_counter + 1 != len(scroll_distance) else distance_counter
+
         return WebDriverWait(driver, delay)\
             .until(EC.presence_of_element_located((By.CLASS_NAME, 'c-itemList')))\
             .get_attribute('outerHTML')
-        '''    
-        This needs to be updated to scroll to the bottom of the screen and wait rather than clicking a load more button
-        try:
-            time.sleep(15)
-            button = driver.find_element_by_css_selector('.l-container')\
-                .find_element_by_css_selector('.c-viewMore__btn')
-            driver.execute_script("arguments[0].click();", button)
-            time.sleep(5)
-            print("More videos found on page\n")
-        except NoSuchElementException:
-            print("This page doesn't have a button to click for loading more episodes\n")
-
-        return driver.find_element_by_xpath('//div[@class="c-hero"]/\
-            following-sibling::div[contains(@class, "l-block")]\
-            //child::div[contains(@class, "c-tiles")]')\
-            .get_attribute('outerHTML')
-        '''    
 
     except TimeoutException:
         # The element exists, but the content within it doesn't so the page loaded but there are no vids.
@@ -241,17 +290,18 @@ def get_parsed_html(show, driver, times_tried=1):
                 driver.quit()
                 return None
             else:
-                print("No Videos Found, Trying Once More...\n")
+                print("No Videos Found, Trying Once More...")
                 driver.quit()
-                driver = webdriver.Firefox(options=options)
-                driver.get(vod_base_url+show)
+                driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+                #driver = webdriver.Firefox(options=options)
                 return get_parsed_html(show, driver, times_tried + 1)
 
         # The element didnt load so the whole page needs to be reloaded.
         except NoSuchElementException:
             print("Loading took too much time, retrying...")
             driver.quit()
-            driver = webdriver.Firefox(options=options)
+            #driver = webdriver.Firefox(options=options)
+            driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
             driver.get(vod_base_url+show)
             return get_parsed_html(show, driver)
 
@@ -264,12 +314,15 @@ def main():
 
     for show, directory in shows_dict.items():
         # Create webdriver
-        driver = webdriver.Firefox(options=options)
+        #driver = webdriver.Firefox(options=options)
+        driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
 
         # Open web page
         driver.get(vod_base_url+show)
 
         # Parse web page and grab html block that has relevant urls
+        print("Looking For Episodes of:", shows_dict[show])
+        print(vod_base_url+show +"\n")
         parsed_html = get_parsed_html(show, driver)
         if not parsed_html:
             driver.quit()
@@ -283,14 +336,16 @@ def main():
         print("\n")
 
     driver.quit()
+    force_quit_browser_silently()
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        call(["ps", "aux", "|", "grep", "firefox", "|", "grep", "-v", "grep", "|", "kill", "$(awk", "'{print $2}')"])
         sys.exit()
     except Exception as e:
+        print("Main Exception Catcher")
         print(str(e))
-        call(["ps", "aux", "|", "grep", "firefox", "|", "grep", "-v", "grep", "|", "kill", "$(awk", "'{print $2}')"])
-        sys.exit()
+        print('Exception caught, type is:', e.__class__.__name__)
+        force_quit_browser_silently()
+        #sys.exit()
