@@ -46,11 +46,11 @@ def titlecase(s):
     '''
         Used for folder naming. I didn't write this.
     '''
-
     return re.sub(r"[A-Za-z]+('[A-Za-z]+)?",
         lambda mo: mo.group(0)[0].upper() +
             mo.group(0)[1:].lower(),
         s)
+
 def force_quit_browser_silently():
     FNULL = open(os.devnull, 'w')
 
@@ -271,7 +271,7 @@ def get_parsed_html(show, driver, times_tried=1):
         # The element exists, but the content within it doesn't so the page loaded but there are no vids.
         try:
             driver.find_element_by_xpath('//div[@class="l-contents"]')
-            if times_tried > 1:
+            if times_tried > 5:
                 print("No Videos to download in try block\n")
                 driver.quit()
                 return None
@@ -287,7 +287,7 @@ def get_parsed_html(show, driver, times_tried=1):
             driver.quit()
             driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
             driver.get(vod_base_url+show)
-            return get_parsed_html(show, driver)
+            return get_parsed_html(show, driver, times_tried + 1)
 
     except NoSuchElementException:
         print("No Videos to download in nosuchelement exeption\n")
@@ -331,4 +331,4 @@ if __name__ == '__main__':
         print(str(e))
         print('Exception caught, type is:', e.__class__.__name__)
         force_quit_browser_silently()
-        #sys.exit()
+        sys.exit()
