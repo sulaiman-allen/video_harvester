@@ -24,10 +24,8 @@ from nfo_template import nfo_string
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
 
-#run pip3 install requests beautifulsoup4 rq
-#apt install ffmpeg axel
+#apt install ffmpeg axel chromium-chromedriver
 #sudo pip install -U youtube-dl
-#sudo apt-get install chromium-chromedriver
 #apt install redis
 
 #options = Options()
@@ -35,6 +33,7 @@ DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
 
 chrome_options = Options()  
 chrome_options.add_argument("--headless")  
+chrome_options.add_argument("--no-sandbox")  #Temp
 chrome_options.binary_location = '/usr/bin/chromium-browser'  
 
 
@@ -72,7 +71,7 @@ def get_episode_name_and_path_from_url(show, url):
         error = error.decode('utf-8')
         result = result.decode('utf-8')
         if p.returncode != 0:
-            print("ERROR: Unable to download JSON metadata: HTTP Error 502: Bad Gateway (caused by HTTPError()")
+            print(error)
             time.sleep(2)
             return get_episode_name_and_path_from_url(show, url)   
 
