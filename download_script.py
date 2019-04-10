@@ -12,9 +12,6 @@ from subprocess import call, check_output, Popen, PIPE
 from subprocess import CalledProcessError
 from string import Template
 
-from shows import shows_dict, vod_base_url, base_url
-from nfo_template import nfo_string
-
 import re
 import time
 import sys
@@ -22,14 +19,16 @@ import sqlite3
 import os
 import requests
 
+from shows import shows_dict, vod_base_url, base_url
+from nfo_template import nfo_string
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
 
-#run pip3 install requests beautifulsoup4
+#run pip3 install requests beautifulsoup4 rq
 #apt install ffmpeg axel
 #sudo pip install -U youtube-dl
 #sudo apt-get install chromium-chromedriver
-
+#apt install redis
 
 #options = Options()
 #options.headless = True
