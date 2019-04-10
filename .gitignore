@@ -2,6 +2,7 @@ video_harvester/*
 downloaded/*
 __pycache__/*
 old_files/*
+venv/*
 *.pyc
 *.swp
 *.swo
