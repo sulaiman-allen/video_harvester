@@ -30,7 +30,6 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")  #Temp
 chrome_options.binary_location = '/usr/bin/chromium-browser'  
 
-
 def db_connect(db_path=DEFAULT_PATH):
     return sqlite3.connect(db_path)  
 
@@ -52,8 +51,6 @@ def force_quit_browser_silently():
         "grep", "-v", "grep", "|",
         "kill", "$(awk", "'{print $2}'", "&>", "/dev/null"
     ], shell=True, stdout=FNULL)
-
-    #kill $(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
 
     print("Force Quitting Browser...")
 
