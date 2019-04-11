@@ -13,7 +13,6 @@ from subprocess import call
 
 import re
 import time
-import sys
 import sqlite3  
 import os
 import requests
@@ -255,10 +254,10 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        sys.exit()
+        exit()
     except Exception as e:
         print("Main Exception Catcher")
         print(str(e))
         print('Exception caught, type is:', e.__class__.__name__)
         force_quit_browser_silently()
-        sys.exit()
+        exit()
