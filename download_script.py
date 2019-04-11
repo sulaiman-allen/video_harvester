@@ -23,6 +23,7 @@ from shows import shows_dict, vod_base_url, base_url
 from nfo_template import nfo_string
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
+DRIVER_LOCATION = '/usr/lib/chromium-browser/chromedriver'
 
 #apt install ffmpeg axel chromium-chromedriver
 #sudo pip install -U youtube-dl
@@ -138,7 +139,7 @@ def write_nfo(episode, show, driver):
         driver.quit()
         time.sleep(5)
         force_quit_browser_silently()
-        driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+        driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
         time.sleep(3)
         write_nfo(episode, show, driver)
     except Exception as e:
@@ -147,7 +148,7 @@ def write_nfo(episode, show, driver):
         driver.quit()
         time.sleep(5)
         force_quit_browser_silently()
-        driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+        driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
         time.sleep(3)
         write_nfo(episode, show, driver)
     
@@ -276,14 +277,14 @@ def get_parsed_html(show, driver, times_tried=1):
             else:
                 print("No Videos Found, Trying Once More...")
                 driver.quit()
-                driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+                driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
                 return get_parsed_html(show, driver, times_tried + 1)
 
         # The element didnt load so the whole page needs to be reloaded.
         except NoSuchElementException:
             print("Loading took too much time, retrying...")
             driver.quit()
-            driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+            driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
             driver.get(vod_base_url+show)
             return get_parsed_html(show, driver, times_tried + 1)
 
@@ -292,11 +293,19 @@ def get_parsed_html(show, driver, times_tried=1):
         driver.quit()
         return None
 
+    except WebDriverException as e:
+        print(e)
+        driver.quit()
+        driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
+        driver.get(vod_base_url+show)
+        return get_parsed_html(show, driver, times_tried + 1)
+
+
 def main():
 
     for show, directory in shows_dict.items():
         # Create webdriver
-        driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', chrome_options=chrome_options)
+        driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
 
         # Open web page
         driver.get(vod_base_url+show)
