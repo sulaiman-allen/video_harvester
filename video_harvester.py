@@ -10,6 +10,8 @@ from urllib3.exceptions import MaxRetryError
 from bs4 import BeautifulSoup
 from subprocess import call
 #from string import Template
+from rq import Queue
+from redis import Redis
 
 import re
 import time
@@ -28,6 +30,9 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")  
 chrome_options.add_argument("--no-sandbox")  #Temp
 chrome_options.binary_location = '/usr/bin/chromium-browser'  
+
+redis_conn = Redis()
+q = Queue(connection=redis_conn)
 
 def db_connect(db_path=DEFAULT_PATH):
     return sqlite3.connect(db_path)  
@@ -132,6 +137,15 @@ def add_entry_to_db(show, episode):
     cur.execute(show_sql, (show, episode['url'], episode['title'], episode['date']))
     con.commit()
     
+def async_logic(show, episode, driver):
+    verify_downloaded = download_episode(show, episode)
+    if not verify_downloaded:
+       return false 
+
+    air_date = write_nfo(episode, show, driver) 
+    episode['date'] = air_date
+    add_entry_to_db(show, episode)
+
 def process_episodes(show, episodes, driver):
     con = db_connect()
     cur = con.cursor()
@@ -144,7 +158,8 @@ def process_episodes(show, episodes, driver):
             print("[ ]:", episode['title'])
 
             # Add entry to database
-            #print("<<<<<<<<<<<")
+            print("<<<<<<<<<<< Sending Task To Download Handler.")
+            '''
             verify_downloaded = download_episode(show, episode)
             if not verify_downloaded:
                continue 
@@ -152,6 +167,7 @@ def process_episodes(show, episodes, driver):
             air_date = write_nfo(episode, show, driver) 
             episode['date'] = air_date
             add_entry_to_db(show, episode)
+            '''
         else:
             print("[x]:", episode['title'])
 
@@ -233,7 +249,7 @@ def main():
         driver.get(vod_base_url+show)
 
         # Parse web page and grab html block that has relevant urls
-        print("Looking For Episodes of:", shows_dict[show])
+        print("\nLooking For Episodes of:", shows_dict[show])
         print(vod_base_url+show +"\n")
         parsed_html = get_parsed_html(show, driver)
         if not parsed_html:
