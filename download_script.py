@@ -25,13 +25,6 @@ from nfo_template import nfo_string
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
 DRIVER_LOCATION = '/usr/lib/chromium-browser/chromedriver'
 
-#apt install ffmpeg axel chromium-chromedriver
-#sudo pip install -U youtube-dl
-#apt install redis
-
-#options = Options()
-#options.headless = True
-
 chrome_options = Options()  
 chrome_options.add_argument("--headless")  
 chrome_options.add_argument("--no-sandbox")  #Temp
