@@ -8,9 +8,8 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 from urllib3.exceptions import MaxRetryError
 
 from bs4 import BeautifulSoup
-from subprocess import call, check_output, Popen, PIPE
-from subprocess import CalledProcessError
-from string import Template
+from subprocess import call
+#from string import Template
 
 import re
 import time
@@ -20,6 +19,7 @@ import os
 import requests
 
 from shows import shows_dict, vod_base_url, base_url
+from download_helpers import get_episode_name_and_path_from_url, download_episode
 from nfo_template import nfo_string
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
@@ -53,30 +53,6 @@ def force_quit_browser_silently():
     ], shell=True, stdout=FNULL)
 
     print("Force Quitting Browser...")
-
-def get_episode_name_and_path_from_url(show, url):
-
-    try:
-        p = Popen([ "youtube-dl", "--get-title", url], stdout=PIPE, stderr=PIPE)
-        result, error = p.communicate()
-        error = error.decode('utf-8')
-        result = result.decode('utf-8')
-        if p.returncode != 0:
-            print(error)
-            time.sleep(2)
-            return get_episode_name_and_path_from_url(show, url)   
-
-        filename = re.sub('[^0-9a-zA-Z\-\_\.\']+', " ", re.sub('[:]+', "-", result))
-        filename = filename.strip()
-        directory = shows_dict[show].strip()
-        return directory + '/' + filename
-
-    except CalledProcessError as error:
-        print("Getting the episode name threw an error. Retrying...")
-        #print("resp = ", error.output.decode('utf8'))
-        time.sleep(2)
-        return get_episode_name_and_path_from_url(show, url)   
-
 
 def write_nfo(episode, show, driver):
     '''
@@ -142,49 +118,6 @@ def write_nfo(episode, show, driver):
         time.sleep(3)
         write_nfo(episode, show, driver)
     
-
-def download_episode(show, episode):
-    '''
-        Returns true if episode downloaded correctly, false otherwise
-    '''
-
-    url = base_url + episode['url'].replace("ondemand", "vod")
-
-    try:
-        path = get_episode_name_and_path_from_url(show, url)
-
-        if not path:
-            return None
-
-        p = Popen([\
-            "youtube-dl", \
-            "--write-thumbnail", \
-            "--external-downloader", "axel", \
-            "--external-downloader-args", "'-n 15 -a -k'", \
-            "--format", "best", \
-            "-o", './downloaded/' + path + '.%(ext)s', url \
-        ], stderr=PIPE)
-
-        error = p.communicate()
-
-        if p.returncode != 0: 
-            error =  error[1].decode("utf-8")
-            if "ERROR: Unable to find episode" in error:
-                print("###########Epsisode couldn't be downloaded")
-                return False
-
-            print("There was an error, pausing for a moment before contiuing...")
-            time.sleep(2)
-            print("Redownloading ", episode['title'])
-            return download_episode(show, episode)
-
-        return True
-
-    except CalledProcessError:
-        print("\n!!!!!Error Happened Here !!!!!!!\n")
-        print("Redownloading ", episode['title'])
-        time.sleep(2)
-        return download_episode(show, episode)
 
 def search_for_links(parsed_html):
     soup = BeautifulSoup(parsed_html, 'html.parser')
