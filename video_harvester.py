@@ -58,7 +58,7 @@ def force_quit_browser_silently():
 
     print("Force Quitting Browser...")
 
-def write_nfo(episode, show, driver):
+def write_nfo(show, episode, driver):
     '''
         Returns the date the show aired.
     '''
@@ -97,13 +97,13 @@ def write_nfo(episode, show, driver):
 
     except TimeoutException:
         print("Fetching nfo took too much time, retrying...")
-        return write_nfo(episode, show, driver)
+        return write_nfo(show, episode, driver)
     except IndexError:
         print("There was an out of range error because page didn't load correctly, retrying..")
-        return write_nfo(episode, show, driver)
+        return write_nfo(show, episode, driver)
     except AttributeError:
         print("There was an AttributeError here. Retrying")
-        return write_nfo(episode, show, driver)
+        return write_nfo(show, episode, driver)
     except MaxRetryError as e:
         print('Exception caught, type is:', e.__class__.__name__)
         driver.quit()
@@ -111,7 +111,7 @@ def write_nfo(episode, show, driver):
         force_quit_browser_silently()
         driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
         time.sleep(3)
-        write_nfo(episode, show, driver)
+        write_nfo(show, episode, driver)
     except Exception as e:
         print(e)
         print('Exception caught, type is:', e.__class__.__name__)
@@ -120,7 +120,7 @@ def write_nfo(episode, show, driver):
         force_quit_browser_silently()
         driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
         time.sleep(3)
-        write_nfo(episode, show, driver)
+        write_nfo(show, episode, driver)
     
 
 def search_for_links(parsed_html):
@@ -142,7 +142,7 @@ def async_logic(show, episode, driver):
     if not verify_downloaded:
        return false 
 
-    air_date = write_nfo(episode, show, driver) 
+    air_date = write_nfo(show, episode, driver) 
     episode['date'] = air_date
     add_entry_to_db(show, episode)
 
@@ -164,7 +164,7 @@ def process_episodes(show, episodes, driver):
             if not verify_downloaded:
                continue 
 
-            air_date = write_nfo(episode, show, driver) 
+            air_date = write_nfo(show, episode, driver) 
             episode['date'] = air_date
             add_entry_to_db(show, episode)
             '''
