@@ -1,9 +1,21 @@
 import re
+import os
 import time
-from subprocess import call, check_output, Popen, PIPE
+from subprocess import Popen, PIPE
 from subprocess import CalledProcessError
-from shows import shows_dict, base_url
+from rq.timeouts import JobTimeoutException
 
+from write_nfo import write_nfo
+from shows import shows_dict, base_url
+from general_utils import db_connect, force_quit_browser_silently
+
+
+def add_entry_to_db(show, episode):
+    con = db_connect()
+    cur = con.cursor()
+    show_sql = "INSERT INTO episodes (show_name, url, episode_name, date) VALUES (?, ?, ?, ?)"
+    cur.execute(show_sql, (show, episode['url'], episode['title'], episode['date']))
+    con.commit()
 
 def get_episode_name_and_path_from_url(show, url):
 
@@ -28,7 +40,7 @@ def get_episode_name_and_path_from_url(show, url):
         return get_episode_name_and_path_from_url(show, url)
 
 
-def download_episode(show, episode):
+def download_episode(show, episode, path):
     '''
         Returns true if episode downloaded correctly, false otherwise
     '''
@@ -36,7 +48,7 @@ def download_episode(show, episode):
     url = base_url + episode['url'].replace("ondemand", "vod")
 
     try:
-        path = get_episode_name_and_path_from_url(show, url)
+        #path = get_episode_name_and_path_from_url(show, url)
 
         if not path:
             return None
@@ -58,10 +70,10 @@ def download_episode(show, episode):
                 print("###########Epsisode couldn't be downloaded")
                 return False
 
-            print("There was an error, pausing for a moment before contiuing...")
+            print("There was an error, pausing for a moment before continuing...")
             time.sleep(2)
             print("Redownloading ", episode['title'])
-            return download_episode(show, episode)
+            return download_episode(show, episode, path)
 
         return True
 
@@ -69,6 +81,21 @@ def download_episode(show, episode):
         print("\n!!!!!Error Happened Here !!!!!!!\n")
         print("Redownloading ", episode['title'])
         time.sleep(2)
-        return download_episode(show, episode)
+        return download_episode(show, episode, path)
 
+def async_logic(show, episode):
 
+    try:
+        path = get_episode_name_and_path_from_url(show, url=base_url + episode['url'].replace("ondemand", "vod"))
+        if not download_episode(show, episode, path):
+           return False
+
+        air_date = write_nfo(show, episode, path)
+        episode['date'] = air_date
+        add_entry_to_db(show, episode)
+        return True
+
+    except JobTimeoutException:
+        #force_quit_browser_silently()
+        raise JobTimeoutException
+        return False
