@@ -1,4 +1,5 @@
 video_harvester/*
+issues
 downloaded/*
 __pycache__/*
 old_files/*
@@ -6,7 +7,8 @@ venv/*
 *.pyc
 *.swp
 *.swo
-episode_db.sqlite3
+episode_db.*
 geckodriver.log
 shows.py
 backup.main.py
+before_split.py
