@@ -17,23 +17,23 @@ def write_nfo(show, episode, path, driver=None):
     try:
         driver.get(url)
         parsed_html = WebDriverWait(driver, delay)\
-            .until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'l-block') and contains(@class, '-lg')]"))) \
+            .until(EC.presence_of_element_located((By.XPATH,\
+            "//div[contains(@class, 'l-block') and contains(@class, '-lg')]"))) \
             .get_attribute('outerHTML')
 
         soup = BeautifulSoup(parsed_html, 'html.parser')
         nfo_content = {
             "title" : episode['title'],
             "broadcast_date" : soup.find("span", {"class": ["c-episodeInfo__broadcastDate"]})\
-                    .find("b").text,
-                    "plot" : soup.find("div", {"class": ["p-episodeItem__description"]})\
-                    .find("p").text
+                .find("b").text,
+                "plot" : soup.find("div", {"class": ["p-episodeItem__description"]})\
+                .find("p").text
         }
 
-        string_final = nfo_string.substitute(title=nfo_content['title'], \
-                date=nfo_content['broadcast_date'], \
+        string_final = nfo_string.substitute(title=nfo_content['title'],\
+                date=nfo_content['broadcast_date'],\
                 plot=nfo_content['plot']).lstrip()
 
-        #path = get_episode_name_and_path_from_url(show, url.replace("ondemand", "vod"))
         directory = shows_dict[show]
 
         if not os.path.exists("./downloaded/" + directory):
@@ -72,4 +72,3 @@ def write_nfo(show, episode, path, driver=None):
         driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
         time.sleep(3)
         write_nfo(show, episode, path, driver)
-

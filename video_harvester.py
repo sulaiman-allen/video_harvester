@@ -1,9 +1,4 @@
-#import re
-#import os
-#from subprocess import call
-#from shows import shows_dict, vod_base_url, base_url
-#from download_helpers import get_episode_name_and_path_from_url, download_episode, async_logic
-#from nfo_template import nfo_string
+import os
 from rq import Queue
 from redis import Redis
 
@@ -13,17 +8,17 @@ from general_utils import force_quit_browser_silently, db_connect
 from download_helpers import async_logic
 
 
-redis_conn = Redis()
+redis_conn = Redis(host=os.environ["REDIS_HOST"], port=6379)
 q = Queue(connection=redis_conn)
 
 def search_for_links(parsed_html):
     soup = BeautifulSoup(parsed_html, 'html.parser')
-    return [ { # Make sure to update this to remove the ondemand matching
+    return [ {
         "url" : element.find('div', {"class": ['c-item__image']}).find('a')["href"],
         "title" : element.find('div', {"class": ['c-item__content']}).find('a').text
      } for element in soup.find_all('div', {"class": ["c-item", "-media"]}) ]
     
-def process_episodes(show, episodes, driver):
+def process_episodes(show, episodes):
     con = db_connect()
     cur = con.cursor()
 
@@ -38,7 +33,6 @@ def process_episodes(show, episodes, driver):
             q.enqueue_call(func=async_logic,
                            args=(show, episode),
                            timeout="10m")
-            #q.enqueue(async_logic, show, episode)
         else:
             print("[x]:", episode['title'])
 
@@ -109,7 +103,6 @@ def get_parsed_html(show, driver, times_tried=1):
         driver.get(vod_base_url+show)
         return get_parsed_html(show, driver, times_tried + 1)
 
-
 def main():
 
     for show, directory in shows_dict.items():
@@ -133,9 +126,7 @@ def main():
         driver.quit()
 
         # Search for existence of show in database. If not found, download.
-        process_episodes(show, episodes, driver)
-        # Close webdriver
-        #driver.quit()
+        process_episodes(show, episodes)
         print("\n")
 
     driver.quit()
