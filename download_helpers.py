@@ -20,11 +20,11 @@ def add_entry_to_db(show, episode):
 def get_episode_name_and_path_from_url(show, url):
 
     try:
-        p = Popen([ "youtube-dl", "--get-title", url], stdout=PIPE, stderr=PIPE)
-        result, error = p.communicate()
+        process = Popen([ "youtube-dl", "--get-title", url], stdout=PIPE, stderr=PIPE)
+        result, error = process.communicate()
         error = error.decode('utf-8')
         result = result.decode('utf-8')
-        if p.returncode != 0:
+        if process.returncode != 0:
             print(error)
             time.sleep(2)
             return get_episode_name_and_path_from_url(show, url)
@@ -48,29 +48,36 @@ def download_episode(show, episode, path):
     url = base_url + episode['url'].replace("ondemand", "vod")
 
     try:
-        #path = get_episode_name_and_path_from_url(show, url)
-
         if not path:
             return None
 
-        p = Popen([\
+        process = Popen([\
             "youtube-dl", \
             "--write-thumbnail", \
             "--external-downloader", "axel", \
             "--external-downloader-args", "'-n 15 -a -k'", \
             "--format", "best", \
             "-o", './downloaded/' + path + '.%(ext)s', url \
-        ], stderr=PIPE)
+        ], stderr=PIPE, stdout=PIPE)
 
-        error = p.communicate()
 
-        if p.returncode != 0:
-            error =  error[1].decode("utf-8")
+        while True:
+            output = process.stdout.readline().decode("utf-8")
+            if output == "" and process.poll() is not None:
+                break
+            if output and ("Writing thumbnail" in output or "Destination" in output or "Fixing" in output):
+                print(output)
+        
+        #if process.returncode != 0:
+        if process.poll() != 0:
+            #error =  error[1].decode("utf-8")
+            error =  process.stderr.readline().decode("utf-8")
             if "ERROR: Unable to find episode" in error:
                 print("###########Epsisode couldn't be downloaded")
                 return False
 
             print("There was an error, pausing for a moment before continuing...")
+            print(error)
             time.sleep(2)
             print("Redownloading ", episode['title'])
             return download_episode(show, episode, path)

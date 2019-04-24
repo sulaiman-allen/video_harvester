@@ -3,29 +3,30 @@ services:
   video_harvester:
     image: glorbon_labs/video_harvester
     container_name: video_harvester
-    environment:
-      - PUID=1000
-      - PGID=1000
     volumes:
       - ${USERDIR}/docker/nhk_scraper:/usr/src/video_harvester/
       #/dev/shm is used to prevent chrome from crashing.
       - /dev/shm:/dev/shm
     depends_on:
       - video_harvester_redis
+    user: "1000:1000"
     environment:
       - REDIS_HOST=video_harvester_redis
+      - PUID=1000
+      - PGID=1000
 
   rq_worker:
     container_name: rq_worker
     image: glorbon_labs/rq_worker
-    environment:
-      - PUID=1000
-      - PGID=1000
     volumes:
       - ${USERDIR}/docker/nhk_scraper:/usr/src/rq_worker
       - /dev/shm:/dev/shm
+    user: "1000:1000"
     environment:
+      - PUID=1000
+      - PGID=1000
       - REDIS_HOST=video_harvester_redis
+      - PYTHONUNBUFFERED=1
     depends_on:
       - video_harvester_redis
 
@@ -33,9 +34,11 @@ services:
     container_name: video_harvester_redis
     image: redis
     volumes:
-      - redis_data:/data
+            #- redis_data:/data
+      - ${USERDIR}/docker/nhk_scraper/redis_data:/data
     ports:
       - "6379:6379"
+    #user: "1000:1000"
     environment:
       - REDIS_HOST=video_harvester_redis
 

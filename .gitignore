@@ -12,3 +12,4 @@ geckodriver.log
 shows.py
 backup.main.py
 before_split.py
+redis_data

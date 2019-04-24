@@ -19,4 +19,4 @@ COPY ./requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 RUN mkdir /usr/lib/chromium-browser && ln -s /usr/lib/chromium/chromedriver /usr/lib/chromium-browser/chromedriver
 RUN ln -s /usr/bin/python3 /usr/bin/python
-CMD [ "python3", "video_harvester.py" ]
+CMD [ "python3", "-u", "video_harvester.py" ]
