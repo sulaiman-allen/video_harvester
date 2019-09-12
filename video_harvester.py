@@ -38,6 +38,11 @@ def process_episodes(show, episodes):
 
 def get_parsed_html(show, driver, times_tried=1):
 
+    # Seach for existence of 404
+    if "Error: 404 Not Found" in driver.title:
+        print("Page no longer found.\n")
+        return None
+
     delay = 5 # seconds
     try:
         WebDriverWait(driver, delay)\

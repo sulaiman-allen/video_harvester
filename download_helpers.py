@@ -20,6 +20,7 @@ def add_entry_to_db(show, episode):
 def get_episode_name_and_path_from_url(show, url):
 
     try:
+        #process = Popen([ "youtube-dl", "--verbose", "--get-title", url], stdout=PIPE, stderr=PIPE) # TEMP verbose
         process = Popen([ "youtube-dl", "--get-title", url], stdout=PIPE, stderr=PIPE)
         result, error = process.communicate()
         error = error.decode('utf-8')
@@ -45,7 +46,7 @@ def download_episode(show, episode, path):
         Returns true if episode downloaded correctly, false otherwise
     '''
     # The replacing probably no longer needs to happen based on an update to yt-downloader.
-    url = base_url + episode['url'].replace("ondemand", "vod")
+    url = base_url + episode['url']
 
     try:
         if not path:
@@ -53,6 +54,7 @@ def download_episode(show, episode, path):
 
         process = Popen([\
             "youtube-dl", \
+            #"--verbose", #Temp
             "--write-thumbnail", \
             "--external-downloader", "axel", \
             "--external-downloader-args", "'-n 15 -a -k'", \
@@ -93,7 +95,7 @@ def download_episode(show, episode, path):
 def async_logic(show, episode):
 
     try:
-        path = get_episode_name_and_path_from_url(show, url=base_url + episode['url'].replace("ondemand", "vod"))
+        path = get_episode_name_and_path_from_url(show, url=base_url + episode['url'])
         if not download_episode(show, episode, path):
            return False
 
