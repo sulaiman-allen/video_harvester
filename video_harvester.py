@@ -5,7 +5,7 @@ from redis import Redis
 from web_driver_dependencies import *
 from shows import shows_dict, vod_base_url
 from general_utils import force_quit_browser_silently, db_connect
-from download_helpers import async_logic
+from download_helpers import async_logic, check_if_show_is_needed
 
 
 redis_conn = Redis(host=os.environ["REDIS_HOST"], port=6379)
@@ -17,24 +17,6 @@ def search_for_links(parsed_html):
         "url" : element.find('div', {"class": ['c-item__image']}).find('a')["href"],
         "title" : element.find('div', {"class": ['c-item__content']}).find('a').text
      } for element in soup.find_all('div', {"class": ["c-item", "-media"]}) ]
-    
-def process_episodes(show, episodes):
-    con = db_connect()
-    cur = con.cursor()
-
-    for episode in episodes:
-        cur.execute("SELECT * FROM episodes WHERE show_name = ? AND episode_name = ?",\
-            (show, episode['title']))
-
-        if not cur.fetchone():
-            print("[ ]:", episode['title'])
-            # Start download, write nfo and add to database.
-            #print("<<<<<<<<<<< Sending Task To Download Handler.")
-            q.enqueue_call(func=async_logic,
-                           args=(show, episode),
-                           timeout="10m")
-        else:
-            print("[x]:", episode['title'])
 
 def get_parsed_html(show, driver, times_tried=1):
 
@@ -131,7 +113,16 @@ def main():
         driver.quit()
 
         # Search for existence of show in database. If not found, download.
-        process_episodes(show, episodes)
+        for episode in episodes:
+            if check_if_show_is_needed(show, episode):
+                print("[ ]:", episode['title'])
+                # Start download, write nfo and add to database.
+                q.enqueue_call(func=async_logic,
+                   args=(show, episode),
+                   timeout="10m")
+            else:
+                print("[x]:", episode['title'])
+
         print("\n")
 
     driver.quit()

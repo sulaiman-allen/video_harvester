@@ -8,6 +8,22 @@ from rq.timeouts import JobTimeoutException
 from write_nfo import write_nfo
 from shows import shows_dict, base_url
 from general_utils import db_connect, force_quit_browser_silently
+#from video_harvester import check_if_show_is_needed
+
+def check_if_show_is_needed(show, episode):
+    '''
+        Returns true if episode exists already in database, false otherwise.
+    '''
+    con = db_connect()
+    cur = con.cursor()
+
+    cur.execute("SELECT * FROM episodes WHERE show_name = ? AND episode_name = ?",\
+        (show, episode['title']))
+
+    if not cur.fetchone():
+        return True
+    else:
+        return False
 
 
 def add_entry_to_db(show, episode):
@@ -95,6 +111,10 @@ def download_episode(show, episode, path):
 def async_logic(show, episode):
 
     try:
+        if not check_if_show_is_needed(show, episode):
+            #print("This thing has already been downloaded!!!")
+            return False
+
         path = get_episode_name_and_path_from_url(show, url=base_url + episode['url'])
         if not download_episode(show, episode, path):
            return False
