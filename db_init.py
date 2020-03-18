@@ -1,4 +1,4 @@
-from download_script import db_connect
+from general_utils import db_connect
 #import os
 #DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'episode_db.sqlite3')
 

@@ -5,10 +5,9 @@ from subprocess import Popen, PIPE
 from subprocess import CalledProcessError
 from rq.timeouts import JobTimeoutException
 
-from write_nfo import write_nfo
 from shows import shows_dict, base_url
+from write_nfo import write_nfo
 from general_utils import db_connect, force_quit_browser_silently
-#from video_harvester import check_if_show_is_needed
 
 def check_if_show_is_needed(show, episode):
     '''
@@ -36,7 +35,6 @@ def add_entry_to_db(show, episode):
 def get_episode_name_and_path_from_url(show, url):
 
     try:
-        #process = Popen([ "youtube-dl", "--verbose", "--get-title", url], stdout=PIPE, stderr=PIPE) # TEMP verbose
         process = Popen([ "youtube-dl", "--get-title", url], stdout=PIPE, stderr=PIPE)
         result, error = process.communicate()
         error = error.decode('utf-8')
@@ -61,8 +59,6 @@ def download_episode(show, episode, path):
     '''
         Returns true if episode downloaded correctly, false otherwise
     '''
-    # The replacing probably no longer needs to happen based on an update to yt-downloader.
-    url = base_url + episode['url']
 
     try:
         if not path:
@@ -75,7 +71,7 @@ def download_episode(show, episode, path):
             "--external-downloader", "axel", \
             "--external-downloader-args", "'-n 15 -a -k'", \
             "--format", "best", \
-            "-o", './downloaded/' + path + '.%(ext)s', url \
+            "-o", './downloaded/' + path + '.%(ext)s', episode['url'] \
         ], stderr=PIPE, stdout=PIPE)
 
 
@@ -88,7 +84,6 @@ def download_episode(show, episode, path):
         
         #if process.returncode != 0:
         if process.poll() != 0:
-            #error =  error[1].decode("utf-8")
             error =  process.stderr.readline().decode("utf-8")
             if "ERROR: Unable to find episode" in error:
                 print("###########Epsisode couldn't be downloaded")
@@ -109,13 +104,11 @@ def download_episode(show, episode, path):
         return download_episode(show, episode, path)
 
 def async_logic(show, episode):
-
     try:
         if not check_if_show_is_needed(show, episode):
-            #print("This thing has already been downloaded!!!")
             return False
 
-        path = get_episode_name_and_path_from_url(show, url=base_url + episode['url'])
+        path = get_episode_name_and_path_from_url(show, url=episode['url'])
         if not download_episode(show, episode, path):
            return False
 

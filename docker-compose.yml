@@ -2,16 +2,17 @@ version: '3.6'
 services:  
   video_harvester:
     image: glorbon_labs/video_harvester:latest
+    #build: glorbon_labs/rq_worker:latest
     container_name: video_harvester
     volumes:
-      - ${USERDIR}/docker/nhk_scraper:/usr/src/video_harvester/
-        #/dev/shm is used to prevent chrome from crashing.
-      - /dev/shm:/dev/shm
+      - ${USERDIR}/docker/video_harvester:/usr/src/video_harvester/
+      - /dev/shm:/dev/shm #/dev/shm is used to prevent chrome from crashing.
     depends_on:
       - video_harvester_redis
     user: "1000:1000"
     environment:
       - REDIS_HOST=video_harvester_redis
+      - SELECTED_PARSER=tubi
       - PUID=1000
       - PGID=1000
 
@@ -19,29 +20,14 @@ services:
     container_name: rq_worker
     image: glorbon_labs/rq_worker:latest
     volumes:
-      - ${USERDIR}/docker/nhk_scraper:/usr/src/rq_worker
+      - ${USERDIR}/docker/video_harvester:/usr/src/rq_worker
       - /dev/shm:/dev/shm
     user: "1000:1000"
     environment:
+      - REDIS_HOST=video_harvester
       - PUID=1000
       - PGID=1000
-      - REDIS_HOST=video_harvester_redis
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - video_harvester_redis
-
-
-  rq_worker_2:
-    container_name: rq_worker_2
-    image: glorbon_labs/rq_worker:latest
-    volumes:
-      - ${USERDIR}/docker/nhk_scraper:/usr/src/rq_worker
-      - /dev/shm:/dev/shm
-    user: "1000:1000"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - REDIS_HOST=video_harvester_redis
+      - SELECTED_PARSER=tubi
       - PYTHONUNBUFFERED=1
     depends_on:
       - video_harvester_redis
@@ -49,13 +35,15 @@ services:
   video_harvester_redis:
     container_name: video_harvester_redis
     image: redis
-    volumes:
-      - ${USERDIR}/docker/nhk_scraper/redis_data:/data
+    #volumes:
+      #- ${USERDIR}/docker/video_harvester/redis_data:/data
     ports:
       - "6379:6379"
     #user: "1000:1000"
     environment:
       - REDIS_HOST=video_harvester_redis
 
-volumes:  
-  redis_data:
+
+
+ #volumes:  
+   #redis_data:

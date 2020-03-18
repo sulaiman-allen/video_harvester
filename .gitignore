@@ -1,4 +1,6 @@
+.env
 video_harvester/*
+docker-compose.yml.backup
 issues
 downloaded/*
 __pycache__/*

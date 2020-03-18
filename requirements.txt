@@ -4,8 +4,7 @@ chardet==3.0.4
 Click==7.0
 idna==2.8
 redis==3.2.1
-requests==2.21.0
 rq==1.0
-selenium==3.141.0
+#selenium==3.141.0
 soupsieve==1.9
-urllib3 ~> 1.24.2
+helium==3.0.1
