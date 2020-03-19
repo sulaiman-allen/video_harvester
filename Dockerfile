@@ -27,7 +27,13 @@ RUN apk add --no-cache\
 	chromium\
 	chromium-chromedriver\
 	py-pip\
-	curl
+	curl\
+	gcc\
+	g++\
+	make\
+	libffi-dev\
+	openssl-dev\
+	python3-dev
 
 # This has been updated to make the cache not be used for the following command
 #RUN curl -L :q

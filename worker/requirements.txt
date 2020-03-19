@@ -8,3 +8,4 @@ rq==1.0
 #selenium==3.141.0
 soupsieve==1.9
 helium==3.0.1
+pycrypto==2.6.1

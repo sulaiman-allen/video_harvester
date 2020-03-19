@@ -4,14 +4,20 @@ FROM alpine:edge
 WORKDIR /usr/src/rq_worker
 RUN apk add --no-cache\
         python3\
-	py-pip\
         ffmpeg\
         axel\
-        chromium\
-        chromium-chromedriver\
         libexif\
         udev\
-        curl
+        chromium\
+        chromium-chromedriver\
+        py-pip\
+        curl\
+        gcc\
+        g++\
+        make\
+        libffi-dev\
+        openssl-dev\
+        python3-dev
 
 # This has been updated to make the cache not be used for the following command
 RUN head -c 5 /dev/random > random_bytes && curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl && chmod a+rx /usr/local/bin/youtube-dl
