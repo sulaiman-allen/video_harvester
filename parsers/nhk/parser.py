@@ -1,6 +1,6 @@
 from web_driver_dependencies import *
 
-def get_parsed_html(show, vod_base_url, driver, times_tried=1):
+def get_available_episodes(show, vod_base_url, base_url, driver, times_tried=1):
 
     # Seach for existence of 404
     if "Error: 404 Not Found" in driver.title:
@@ -34,9 +34,10 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
             last_height = new_height
             distance_counter = distance_counter + 1 if distance_counter + 1 != len(scroll_distance) else distance_counter
 
-        return WebDriverWait(driver, delay)\
+        parsed_html = WebDriverWait(driver, delay)\
             .until(EC.presence_of_element_located((By.CLASS_NAME, 'c-itemList')))\
             .get_attribute('outerHTML')
+        return search_for_links(parsed_html, base_url)
 
     except TimeoutException:
         # The element exists, but the content within it doesn't so the page loaded but there are no vids.
@@ -60,7 +61,7 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
                 driver.quit()
                 #driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
                 driver = webdriver.Chrome(options=chrome_options)
-                return get_parsed_html(show, vod_base_url, driver, times_tried + 1)
+                return get_available_episodes(show, vod_base_url, base_url, driver, times_tried + 1)
 
         # The element didnt load so the whole page needs to be reloaded.
         except NoSuchElementException:
@@ -69,7 +70,7 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
             #driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
             driver = webdriver.Chrome(options=chrome_options)
             driver.get(vod_base_url+show)
-            return get_parsed_html(show, vod_base_url, driver, times_tried + 1)
+            return get_available_episodes(show, vod_base_url, base_url, driver, times_tried + 1)
 
     except NoSuchElementException:
         print("No Videos to download in nosuchelement exeption\n")
@@ -82,7 +83,7 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
         #driver = webdriver.Chrome(DRIVER_LOCATION, chrome_options=chrome_options)
         driver = webdriver.Chrome(options=chrome_options)
         driver.get(vod_base_url+show)
-        return get_parsed_html(show, vod_base_url, driver, times_tried + 1)
+        return get_available_episodes(show, vod_base_url, base_url, driver, times_tried + 1)
 
 
 def search_for_links(parsed_html, base_url):

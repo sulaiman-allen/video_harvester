@@ -6,7 +6,7 @@ from subprocess import CalledProcessError
 from rq.timeouts import JobTimeoutException
 
 from shows import shows_dict, base_url
-from write_nfo import write_nfo
+from write_nfo import write_nfo, SELECTED_PARSER
 from general_utils import db_connect, force_quit_browser_silently
 
 def check_if_show_is_needed(show, episode):
@@ -71,7 +71,7 @@ def download_episode(show, episode, path):
             "--external-downloader", "axel", \
             "--external-downloader-args", "'-n 15 -a -k'", \
             "--format", "best", \
-            "-o", './downloaded/' + path + '.%(ext)s', episode['url'] \
+            "-o", "./downloaded/" + SELECTED_PARSER + '/' + path + '.%(ext)s', episode['url'] \
         ], stderr=PIPE, stdout=PIPE)
 
 

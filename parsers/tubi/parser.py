@@ -1,7 +1,7 @@
 from web_driver_dependencies import *
 from helium import *
 
-def get_parsed_html(show, vod_base_url, driver, times_tried=1):
+def get_available_episodes(show, vod_base_url, base_url, driver, times_tried=1):
 
     # Set up helium
     set_driver(driver)
@@ -35,7 +35,7 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
                 print("No Videos Found, Trying Once More...")
                 driver.quit()
                 driver = webdriver.Chrome(chrome_options=chrome_options)
-                return get_parsed_html(show, vod_base_url, driver, times_tried + 1)
+                return get_available_episodes(show, vod_base_url, base_url, driver, times_tried + 1)
 
         # The element didnt load so the whole page needs to be reloaded.
         except NoSuchElementException:
@@ -43,7 +43,7 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
             driver.quit()
             driver = webdriver.Chrome(chrome_options=chrome_options)
             driver.get(vod_base_url+show)
-            return get_parsed_html(show, vod_base_url, driver, times_tried + 1)
+            return get_available_episodes(show, vod_base_url, base_url, driver, times_tried + 1)
 
     except NoSuchElementException:
         print("No Videos to download in nosuchelement exeption\n")
@@ -55,7 +55,7 @@ def get_parsed_html(show, vod_base_url, driver, times_tried=1):
         driver.quit()
         driver = webdriver.Chrome(chrome_options=chrome_options)
         driver.get(vod_base_url+show)
-        return get_parsed_html(show, vod_base_url, driver, times_tried + 1)
+        return get_available_episodes(show, vod_base_url, base_url, driver, times_tried + 1)
 
 def search_for_multi_season_content(show, vod_base_url, driver):
 
@@ -95,10 +95,7 @@ def search_for_multi_season_content(show, vod_base_url, driver):
             .find_elements_by_xpath\
             ('//div[starts-with(@class, "Col") and contains(@class, "Col--6") and contains(@class, "Col--lg-4")]')
 
-        formatted = [ {
-            "title" : row.find_element_by_class_name("_1g4Iu").get_attribute('innerText'),
-            "url" : row.find_element_by_class_name("_2zACE").get_attribute('href')
-            } for row in season ]
+        formatted = search_for_links(season)
 
         for episode in formatted:
             episodes.append(episode)
@@ -109,25 +106,18 @@ def search_for_multi_season_content(show, vod_base_url, driver):
 
 def search_for_single_season_content(show, vod_base_url, driver):
 
-    episode_content = WebDriverWait(driver, 5)\
+    season = WebDriverWait(driver, 5)\
         .until(EC.presence_of_element_located((By.XPATH,\
-        '//div[starts-with(@class, "Carousel") and contains (@class, "Carousel--no-mask")]')))
-
-    season = episode_content.find_elements_by_xpath\
+        '//div[starts-with(@class, "Carousel") and contains (@class, "Carousel--no-mask")]')))\
+        .find_elements_by_xpath\
         ('//div[starts-with(@class, "Col") and contains(@class, "Col--6") and contains(@class, "Col--lg-4")]')
 
-    return [ {
-        "title" : row.find_element_by_class_name("_1g4Iu").get_attribute('innerText'),
-        "url" : row.find_element_by_class_name("_2zACE").get_attribute('href')
-        } for row in season ]
+    return search_for_links(season)
 
 
-def search_for_links(parsed_html, _unused_base_url):
+def search_for_links(parsed_html):
 
-    '''
     return [ {
         "title" : row.find_element_by_class_name("_1g4Iu").get_attribute('innerText'),
         "url" : row.find_element_by_class_name("_2zACE").get_attribute('href')
         } for row in parsed_html ]
-    '''
-    return parsed_html

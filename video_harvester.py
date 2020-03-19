@@ -2,7 +2,8 @@ import os
 from rq import Queue
 from redis import Redis
 
-from shows import shows_dict, vod_base_url, base_url, get_parsed_html, search_for_links
+from shows import shows_dict, vod_base_url, base_url, get_available_episodes
+#from shows import shows_dict, vod_base_url, base_url, get_parsed_html, search_for_links
 from web_driver_dependencies import *
 from general_utils import force_quit_browser_silently, db_connect
 from download_helpers import async_logic, check_if_show_is_needed
@@ -24,15 +25,13 @@ def main():
         # Parse web page and grab html block that has relevant urls
         print("Looking For Episodes of:", shows_dict[show])
         print(vod_base_url+show +"\n") # This maybe needs to go in the parser.
-        parsed_html = get_parsed_html(show, vod_base_url, driver)
-        if not parsed_html:
-            driver.quit()
-            continue
-        # Search for links
-        episodes = search_for_links(parsed_html, base_url)
-
+        episodes = get_available_episodes(show, vod_base_url, base_url, driver)
+            
         # Close webdriver
         driver.quit()
+
+        if not episodes:
+            continue
 
         # Search for existence of show in database. If not found, download.
         for episode in episodes:

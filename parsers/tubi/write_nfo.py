@@ -2,7 +2,7 @@ import os
 from web_driver_dependencies import *
 from general_utils import force_quit_browser_silently
 from shows import shows_dict, base_url
-from nfo_template import nfo_string
+from nfo_template import nfo_string, SELECTED_PARSER
 
 def write_nfo(show, episode, path, driver=None):
     '''
@@ -49,10 +49,10 @@ def write_nfo(show, episode, path, driver=None):
 
         directory = shows_dict[show]
 
-        if not os.path.exists("./downloaded/" + directory):
-             os.makedirs("./downloaded/" + directory)
+        if not os.path.exists("./downloaded/" + SELECTED_PARSER + "/" + directory):
+             os.makedirs("./downloaded/" + SELECTED_PARSER + "/" + directory)
 
-        with open("./downloaded/" + path + ".nfo", "w") as nfo:
+        with open("./downloaded/" + SELECTED_PARSER + "/" + path + ".nfo", "w") as nfo:
             nfo.write(string_final)
 
         driver.quit()
