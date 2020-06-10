@@ -74,20 +74,19 @@ def search_for_multi_season_content(show, vod_base_url, driver):
         .find_element_by_xpath('//ul[starts-with(@class, "Select__list")]')\
         .find_elements_by_xpath('//li[starts-with(@class, "Select__listItem")]')
 
-
-    # Get the location for the center point of each season button. Clicking by element xpath doesn't consistantly
-    # work so instead, coordinates are used.
-    season_button_dimensions = [ {
-        "x" : season.location['x'] + (season.size['width'] / 2),
-        "y" : season.location['y'] + (season.size['height'] / 2)
-        } for season in seasons_elements ]
+    seasons_button_text = [ 
+        season.get_attribute('innerHTML')
+        for season in seasons_elements ]
 
     episodes = []
 
-    for index, element in enumerate(season_button_dimensions):
+    for index, season_text in enumerate(seasons_button_text):
 
-        # Click the center of each season's button to load episodes for that specific season.
-        click(Point(x=element['x'], y=element['y']))
+        season_button = find_all(S("#parental"))[0].web_element\
+            .find_element_by_xpath('//ul[starts-with(@class, "Select__list")]')\
+            .find_element_by_xpath('*[@data-value="' + season_text + '"]')
+
+        click(season_button)
 
         season = WebDriverWait(driver, 5)\
             .until(EC.presence_of_element_located((By.XPATH,\
@@ -101,6 +100,7 @@ def search_for_multi_season_content(show, vod_base_url, driver):
             episodes.append(episode)
 
         click(seasons_button) # Show Seasons
+
 
     return episodes
 
