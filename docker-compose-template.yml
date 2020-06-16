@@ -1,0 +1,36 @@
+version: '3.6'  
+services:  
+  video_harvester:
+    image: glorbon_labs/video_harvester:latest
+    #build: glorbon_labs/rq_worker:latest
+    container_name: video_harvester
+    volumes:
+      - ${USERDIR}/docker/video_harvester:/usr/src/video_harvester/
+      - /dev/shm:/dev/shm #/dev/shm is used to prevent chrome from crashing.
+    depends_on:
+      - video_harvester_redis
+    user: "1000:1000"
+    environment:
+      - REDIS_HOST=video_harvester_redis
+      - SELECTED_PARSER=nhk
+      - PUID=1000
+      - PGID=1000
+
+  #Workers_Begin
+  #Workers_End
+
+  video_harvester_redis:
+    container_name: video_harvester_redis
+    image: redis
+    #volumes:
+      #- ${USERDIR}/docker/video_harvester/redis_data:/data
+    ports:
+      - "6379:6379"
+    #user: "1000:1000"
+    environment:
+      - REDIS_HOST=video_harvester_redis
+
+
+
+ #volumes:  
+   #redis_data:
