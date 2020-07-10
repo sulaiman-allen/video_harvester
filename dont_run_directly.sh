@@ -5,7 +5,7 @@ docker-compose up -d
 tmux split-window -v
 tmux select-pane -t 0
 tmux split-window -v
-tmux send-keys "docker logs -f rq_worker" C-m
+tmux send-keys "docker logs -f rq_worker_1" C-m
 tmux select-pane -t 2
 tmux send-keys "docker logs -f video_harvester" C-m
 
@@ -27,7 +27,7 @@ sleep 10
 
 while [ 1 = 1 ]; do
 
-    LOG_OUTPUT=$(docker-compose logs --tail 1 rq_worker | tail -n 1)
+    LOG_OUTPUT=$(docker-compose logs --tail 1 rq_worker_1 | tail -n 1)
     TIMESTAMP=$(echo $LOG_OUTPUT | awk '{print $3}')
 
     if [[ $TIMESTAMP =~ ^[[:digit:]] ]]; then
@@ -40,14 +40,14 @@ while [ 1 = 1 ]; do
             sleep 20
 
             # After sleeping 30 seconds, make sure that the last line output is still not blank
-            LOG_OUTPUT=$(docker-compose logs --tail 1 rq_worker | tail -n 1)
+            LOG_OUTPUT=$(docker-compose logs --tail 1 rq_worker_1 | tail -n 1)
             TIMESTAMP=$(echo $LOG_OUTPUT | awk '{print $3}')
 
             if [[ $TIMESTAMP =~ ^[[:digit:]] ]]; then
 
                 sleep 15
 
-                LOG_OUTPUT=$(docker-compose logs --tail 1 rq_worker | tail -n 1)
+                LOG_OUTPUT=$(docker-compose logs --tail 1 rq_worker_1 | tail -n 1)
                 NEW_TIMESTAMP=$(echo $LOG_OUTPUT | awk '{print $3}')
 
                 if [[ $NEW_TIMESTAMP =~ ^[[:digit:]] ]]; then

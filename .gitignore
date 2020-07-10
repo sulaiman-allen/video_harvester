@@ -1,6 +1,7 @@
 .env
 video_harvester/*
 docker-compose.yml.backup
+docker-compose.old.yml
 docker-compose.yml
 issues
 downloaded/*
